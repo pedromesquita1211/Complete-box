@@ -396,7 +396,7 @@ let dataList = JSON.parse(localStorage.getItem('cb_datalist') || JSON.stringify(
   ],
   pv: {},
   aiMsgs: [
-    { role: 'ai', text: 'Olá! Sou a Complete AI Quantum Master. Sistema de conversas e DMs offline ativado!' }
+    { role: 'ai', text: 'Olá! Sou a Complete AI Quantum Master. Pesquisa instantânea de conteúdos ativada!' }
   ]
 }));
 
@@ -493,12 +493,96 @@ function render() {
       ${tab === 'games' ? '<textarea id="p-content" placeholder="Cole o código HTML completo do jogo aqui (ex: <html>...</html>)..."></textarea>' : '<input id="p-content" placeholder="Link do YouTube (ex: https://youtube.com/watch?v=...)">'}
       <button class="p" style="margin-top:14px; width:100%;" onclick="submitPost('${tab}')">🚀 Publicar e Ganhar XP</button>
     </div>
+
+    <div class="card" style="padding:16px 20px;">
+      <div class="row" style="gap:10px;">
+        <input id="search-content-input" placeholder="🔍 Pesquisar por título ou autor..." oninput="filterContentList('${tab}')" style="flex:1; margin:0;">
+        <select id="sort-content-select" onchange="filterContentList('${tab}')" style="width:160px; margin:0; background:rgba(1,4,9,0.95); color:var(--tx); border:1px solid var(--bd); border-radius:14px; padding:10px;">
+          <option value="recent">🕒 Mais Recentes</option>
+          <option value="likes">❤️ Mais Curtidos</option>
+        </select>
+      </div>
+    </div>
+
     <div id="content-list"></div>
   `;
   renderContentList(tab);
 }
 
-// --- ABA DE CONVERSAS (LISTA TODOS OS USUÁRIOS OFFLINE/ONLINE) ---
+// --- PESQUISA E FILTRO INTELIGENTE DE CONTEÚDOS ---
+function filterContentList(k) {
+  renderContentList(k);
+}
+
+function renderContentList(k) {
+  const box = $('#content-list'); 
+  if(!box) return;
+  const items = dataList[k] || [];
+  
+  const searchInput = $('#search-content-input');
+  const sortSelect = $('#sort-content-select');
+  
+  const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+  const sortBy = sortSelect ? sortSelect.value : 'recent';
+
+  let filtered = items.filter(x => 
+    (x.title || '').toLowerCase().includes(query) || 
+    (x.authorName || '').toLowerCase().includes(query)
+  );
+
+  if (sortBy === 'likes') {
+    filtered.sort((a, b) => (b.likes || 0) - (a.likes || 0));
+  } else {
+    filtered.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  }
+
+  if(!filtered.length) { 
+    box.innerHTML = '<div class="empty">Nenhum conteúdo encontrado com esses critérios.</div>'; 
+    return; 
+  }
+  
+  box.innerHTML = filtered.map(x => {
+    let body = '';
+    if (k === 'videos') {
+      const ytMatch = x.content.match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([\w-]{11})/);
+      body = ytMatch ? `<iframe src="https://www.youtube.com/embed/${ytMatch[1]}" allowfullscreen></iframe>` : `<a href="${esc(x.content)}" target="_blank" style="color:var(--ac)">🔗 ${esc(x.content)}</a>`;
+    } else if (k === 'games') {
+      let gameHtml = x.content;
+      if (!gameHtml.includes('background') && !gameHtml.includes('<style>')) {
+        gameHtml = `<style>body{background:#0a0e17;color:#fff;font-family:sans-serif;margin:0;padding:10px;}</style>` + gameHtml;
+      }
+      body = `<iframe class="game-frame" srcdoc="${esc(gameHtml)}"></iframe>`;
+    }
+    
+    let deleteBtnHtml = isOwner ? `<button class="danger" onclick="deletePost('${k}','${x.id}')">Apagar</button>` : '';
+
+    return `
+      <div class="card">
+        <div class="row" style="justify-content:space-between; margin-bottom:12px;">
+          <div class="row"><span class="av" style="width:40px;height:40px;font-size:16px;">${esc(x.authorBadge||'👤')}</span><b>${esc(x.authorName)}</b></div>
+          ${deleteBtnHtml}
+        </div>
+        <h3 style="margin:8px 0 14px;">${esc(x.title)}</h3>
+        ${body}
+        <div class="row" style="margin-top:14px; justify-content:space-between;">
+          <button class="s" onclick="likePost('${k}','${x.id}')">❤️ Curtir (${x.likes||0})</button>
+          <span class="by">${timeAgo(x.ts)}</span>
+        </div>
+        <div style="margin-top:14px; border-top:1px solid var(--bd); padding-top:12px;">
+          <div style="display:flex; gap:8px;">
+            <input id="comment-input-${x.id}" placeholder="Escreva um comentário..." style="margin:0; font-size:13px; padding:8px 12px;">
+            <button class="s" onclick="addComment('${k}','${x.id}')">Comentar</button>
+          </div>
+          <div style="margin-top:8px; display:flex; flex-direction:column; gap:6px;">
+            ${(x.comments || []).map(c => `<div style="font-size:12px; background:rgba(255,255,255,0.03); padding:6px 10px; border-radius:10px;"><b>${esc(c.author)}:</b> ${esc(c.text)}</div>`).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// --- CONVERSAS (PV) ---
 function contactsListView() {
   syncGlobalUser();
   let users = JSON.parse(localStorage.getItem('cb_all_users') || '{}');
@@ -1079,53 +1163,6 @@ function addComment(kind, id) {
     renderContentList(kind);
     toast('💬 Comentado!');
   }
-}
-
-function renderContentList(k) {
-  const box = $('#content-list'); 
-  if(!box) return;
-  const items = dataList[k] || [];
-  if(!items.length) { box.innerHTML = '<div class="empty">Nenhum conteúdo publicado.</div>'; return; }
-  
-  box.innerHTML = items.map(x => {
-    let body = '';
-    if (k === 'videos') {
-      const ytMatch = x.content.match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([\w-]{11})/);
-      body = ytMatch ? `<iframe src="https://www.youtube.com/embed/${ytMatch[1]}" allowfullscreen></iframe>` : `<a href="${esc(x.content)}" target="_blank" style="color:var(--ac)">🔗 ${esc(x.content)}</a>`;
-    } else if (k === 'games') {
-      let gameHtml = x.content;
-      if (!gameHtml.includes('background') && !gameHtml.includes('<style>')) {
-        gameHtml = `<style>body{background:#0a0e17;color:#fff;font-family:sans-serif;margin:0;padding:10px;}</style>` + gameHtml;
-      }
-      body = `<iframe class="game-frame" srcdoc="${esc(gameHtml)}"></iframe>`;
-    }
-    
-    let deleteBtnHtml = isOwner ? `<button class="danger" onclick="deletePost('${k}','${x.id}')">Apagar</button>` : '';
-
-    return `
-      <div class="card">
-        <div class="row" style="justify-content:space-between; margin-bottom:12px;">
-          <div class="row"><span class="av" style="width:40px;height:40px;font-size:16px;">${esc(x.authorBadge||'👤')}</span><b>${esc(x.authorName)}</b></div>
-          ${deleteBtnHtml}
-        </div>
-        <h3 style="margin:8px 0 14px;">${esc(x.title)}</h3>
-        ${body}
-        <div class="row" style="margin-top:14px; justify-content:space-between;">
-          <button class="s" onclick="likePost('${k}','${x.id}')">❤️ Curtir (${x.likes||0})</button>
-          <span class="by">${timeAgo(x.ts)}</span>
-        </div>
-        <div style="margin-top:14px; border-top:1px solid var(--bd); padding-top:12px;">
-          <div style="display:flex; gap:8px;">
-            <input id="comment-input-${x.id}" placeholder="Escreva um comentário..." style="margin:0; font-size:13px; padding:8px 12px;">
-            <button class="s" onclick="addComment('${k}','${x.id}')">Comentar</button>
-          </div>
-          <div style="margin-top:8px; display:flex; flex-direction:column; gap:6px;">
-            ${(x.comments || []).map(c => `<div style="font-size:12px; background:rgba(255,255,255,0.03); padding:6px 10px; border-radius:10px;"><b>${esc(c.author)}:</b> ${esc(c.text)}</div>`).join('')}
-          </div>
-        </div>
-      </div>
-    `;
-  }).join('');
 }
 
 window.addEventListener('DOMContentLoaded', () => {
