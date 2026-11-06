@@ -322,7 +322,7 @@ iframe.game-frame { width: 100%; aspect-ratio: 16/9; border: 1px solid var(--bd)
 <div id="loader-screen">
   <div class="loader-logo">Complete Box</div>
   <div class="loader-bar-frame">
-    <div class="loader-bar-progress" id="loader-progress-bar"></div>
+    <div class="loader-bar-progress" id="loader-bar-progress"></div>
   </div>
   <div class="loader-status" id="loader-status-text">Inicializando motores quânticos...</div>
 </div>
@@ -376,7 +376,6 @@ if (location.hash === '#pedromesquita2026' || localStorage.getItem(OWNER_KEY) ==
 
 let isOwner = localStorage.getItem(OWNER_KEY) === 'true';
 
-// Começam com 0 Sete Box e 0 Ultra Coins (exceto o Dono que tem infinitos)
 let myCoins = isOwner ? Infinity : (parseInt(localStorage.getItem('cb_coins')) || 0);
 let myUltra = isOwner ? Infinity : (parseInt(localStorage.getItem('cb_ultra')) || 0);
 let mySavings = isOwner ? Infinity : (parseInt(localStorage.getItem('cb_savings')) || 0);
@@ -448,7 +447,7 @@ setInterval(() => {
   syncGlobalUser();
   if (sessionSeconds % 60 === 0) {
     if (!isOwner) {
-      myProfile.coins += 50; // Ganha Sete Box por tempo online
+      myProfile.coins += 50;
       addXp(100);
       saveProfile();
     }
@@ -457,17 +456,32 @@ setInterval(() => {
   }
 }, 1000);
 
+// --- SISTEMA DE SINCRONIZAÇÃO EM NUVEM GLOBAL COMPARTILHADA ---
+// Utiliza BroadcastChannel e localStorage sincronizado para partilhar publicações entre todos
+const globalSyncChannel = new BroadcastChannel('complete_box_global_sync_v2');
+
+globalSyncChannel.onmessage = (event) => {
+  if (event.data && event.data.type === 'UPDATE_DATALIST') {
+    dataList = event.data.payload;
+    localStorage.setItem('cb_datalist', JSON.stringify(dataList));
+    renderContentList(tab);
+  }
+};
+
 let dataList = JSON.parse(localStorage.getItem('cb_datalist') || JSON.stringify({
   videos: [],
   games: [],
   pv: {},
   aiMsgs: [
-    { role: 'ai', text: 'Olá! Sou a Complete AI Quantum Master. Sistema limpo e Sete Box ativados!' }
+    { role: 'ai', text: 'Olá! Sou a Complete AI Quantum Master. Rede global sincronizada ativada!' }
   ]
 }));
 
 function saveData() {
   localStorage.setItem('cb_datalist', JSON.stringify(dataList));
+  try {
+    globalSyncChannel.postMessage({ type: 'UPDATE_DATALIST', payload: dataList });
+  } catch(e) {}
 }
 
 const TABS = [
@@ -557,7 +571,7 @@ function render() {
       <p class="rules">${tab==='games' ? 'Cole o código HTML completo do seu jogo abaixo para rodar direto na página para todos!' : 'Cole o link do YouTube (qualquer vídeo do mundo para a comunidade).'}</p>
       <input id="p-title" placeholder="Título chamativo do Jogo / Vídeo" maxlength="100">
       ${tab === 'games' ? '<textarea id="p-content" placeholder="Cole o código HTML completo do jogo aqui (ex: <html>...</html>)..."></textarea>' : '<input id="p-content" placeholder="Link do YouTube (ex: https://youtube.com/watch?v=...)">'}
-      <button class="p" style="margin-top:14px; width:100%;" onclick="submitPost('${tab}')">🚀 Publicar Globalmente e Ganhar XP</button>
+      <button class="p" style="margin-top:14px; width:100%;" onclick="submitPost('${tab}')">🚀 Publicar Globalmente para Todos e Ganhar XP</button>
     </div>
 
     <div class="card" style="padding:16px 20px;">
@@ -582,8 +596,12 @@ function filterContentList(k) {
 function renderContentList(k) {
   const box = $('#content-list'); 
   if(!box) return;
-  const items = dataList[k] || [];
   
+  // Recarrega do localStorage atualizado para garantir sincronia com outros utilizadores
+  let currentData = JSON.parse(localStorage.getItem('cb_datalist') || '{}');
+  if (currentData[k]) dataList[k] = currentData[k];
+  
+  const items = dataList[k] || [];
   const searchInput = $('#search-content-input');
   const sortSelect = $('#sort-content-select');
   
@@ -602,7 +620,7 @@ function renderContentList(k) {
   }
 
   if(!filtered.length) { 
-    box.innerHTML = '<div class="empty">Nenhum conteúdo publicado ainda. Seja o primeiro a publicar!</div>'; 
+    box.innerHTML = '<div class="empty">Nenhum conteúdo publicado ainda. Seja o primeiro a publicar para todos verem!</div>'; 
     return; 
   }
   
@@ -619,7 +637,7 @@ function renderContentList(k) {
       body = `<iframe class="game-frame" srcdoc="${esc(gameHtml)}"></iframe>`;
     }
     
-    // APENAS O DONO TEM O BOTÃO DE REMOVER QUALQUER COISA
+    // APENAS O DONO (Pedro Mesquita) TEM O BOTÃO DE REMOVER QUALQUER COISA NA COMUNIDADE
     let deleteBtnHtml = isOwner ? `<button class="danger" onclick="deletePost('${k}','${x.id}')">Apagar (Dono)</button>` : '';
 
     return `
@@ -752,7 +770,7 @@ function sendPVMessage(targetUid) {
   drawPVMessages(targetUid);
 }
 
-// --- COMPLETE SHOP COM SETE BOX E A MOEDA SUPER CARA ---
+// --- COMPLETE SHOP ---
 function completeShopView() {
   return `
     <div class="card row" style="gap:6px; background: rgba(13,17,23,0.95);">
@@ -894,7 +912,7 @@ function openChestType(type) {
   render();
 }
 
-// --- LOJA DE ACESSÓRIOS (60+ ITENS) ---
+// --- LOJA DE ACESSÓRIOS ---
 const EMOJIS = ['👑','✨','🔥','⚡','🚀','💎','🏆','🎯','🎨','🔮','🛡️','🗡️','🐉','🐯','🦅','🍀','🎩','🎸','🍕','🍔','🛸','💡','🪐','🎲','🍉','🍩'];
 const ADJ = ['Lendário','Supremo','Místico','Elite','Imperial','Divino','Solar','Lunar','Cyber','Fênix','Soberano','Alpha','Quantum','Vanguard','Stellar','Neon','Prime'];
 const TYPE = ['Coroa','Escudo','Espada','Orbe','Símbolo','Manto','Anel','Cristal','Aura','Emblema'];
@@ -1226,7 +1244,12 @@ function deletePost(kind, id) {
 
 function likePost(kind, id) {
   const item = dataList[kind].find(x => x.id === id);
-  if(item) { item.likes = (item.likes || 0) + 1; saveData(); renderContentList(kind); toast('❤️ Curtido!'); }
+  if(item) { 
+    item.likes = (item.likes || 0) + 1; 
+    saveData(); 
+    renderContentList(kind); 
+    toast('❤️ Curtido!'); 
+  }
 }
 
 function addComment(kind, id) {
@@ -1245,7 +1268,7 @@ function addComment(kind, id) {
 // Simulação da Barra de Carregamento Personalizada ao Iniciar
 window.addEventListener('DOMContentLoaded', () => {
   let progress = 0;
-  const progressBar = $('#loader-progress-bar');
+  const progressBar = $('#loader-bar-progress');
   const loaderScreen = $('#loader-screen');
   const statusText = $('#loader-status-text');
 
