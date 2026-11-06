@@ -146,7 +146,7 @@ header {
   box-shadow: 0 4px 15px rgba(0,240,255,0.15);
 }
 
-/* MENU RÁPIDO MINIMALISTA (Substitui as abas poluídas) */
+/* MENU RÁPIDO MINIMALISTA */
 .quick-menu {
   display: flex;
   gap: 8px;
@@ -331,13 +331,12 @@ iframe.game-frame { width: 100%; aspect-ratio: 16/9; border: 1px solid var(--bd)
   <span class="logo">Complete Box</span>
   <span class="online-badge"><span class="online-dot"></span> Online Global</span>
   <div class="wallet-box">
-    <!-- Nova moeda estilizada (💎 Câmbio Quantum) -->
-    <span class="currency-pill" id="coins-pill">💎 0</span>
+    <!-- Moeda Sete Box 🪙 -->
+    <span class="currency-pill" id="coins-pill">🪙 0</span>
     <span class="currency-pill ultra" id="ultra-pill">✨ 0</span>
   </div>
 </header>
 
-<!-- MENU RÁPIDO MINIMALISTA UNIFICADO -->
 <div class="quick-menu" id="quick-menu"></div>
 
 <main>
@@ -376,8 +375,10 @@ if (location.hash === '#pedromesquita2026' || localStorage.getItem(OWNER_KEY) ==
 }
 
 let isOwner = localStorage.getItem(OWNER_KEY) === 'true';
-let myCoins = isOwner ? Infinity : (parseInt(localStorage.getItem('cb_coins')) || 25000);
-let myUltra = isOwner ? Infinity : (parseInt(localStorage.getItem('cb_ultra')) || 250);
+
+// Começam com 0 Sete Box e 0 Ultra Coins (exceto o Dono que tem infinitos)
+let myCoins = isOwner ? Infinity : (parseInt(localStorage.getItem('cb_coins')) || 0);
+let myUltra = isOwner ? Infinity : (parseInt(localStorage.getItem('cb_ultra')) || 0);
 let mySavings = isOwner ? Infinity : (parseInt(localStorage.getItem('cb_savings')) || 0);
 let myXp = isOwner ? 999999 : (parseInt(localStorage.getItem('cb_xp')) || 0);
 let myBadge = localStorage.getItem('cb_badge') || (isOwner ? '👑' : '👤');
@@ -447,25 +448,21 @@ setInterval(() => {
   syncGlobalUser();
   if (sessionSeconds % 60 === 0) {
     if (!isOwner) {
-      myProfile.coins += 150;
+      myProfile.coins += 50; // Ganha Sete Box por tempo online
       addXp(100);
       saveProfile();
     }
     updateHeaderStats();
-    toast('⏱️ +150 Diamantes & +100 XP por tempo online!');
+    toast('⏱️ +50 Sete Box & +100 XP por tempo online!');
   }
 }, 1000);
 
 let dataList = JSON.parse(localStorage.getItem('cb_datalist') || JSON.stringify({
-  videos: [
-    { id: 'v1', title: 'Lançamento Global do Complete Box', content: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', by: 'system', authorName: 'Pedro Mesquita (Dono)', authorBadge: '👑', likes: 450, comments: [], ts: Date.now() }
-  ],
-  games: [
-    { id: 'g1', title: 'Cyber Quantum Arcade', content: '<body style="background:#0a0e17;color:#fff;text-align:center;padding-top:40px;font-family:sans-serif;"><h2>🚀 Nave Quantum</h2><canvas id="c" width="300" height="180" style="background:#111;border:2px solid #3b82f6;border-radius:12px;"></canvas><script>const ctx=document.getElementById("c").getContext("2d");let x=150;window.onkeydown=e=>{if(e.key==="ArrowLeft")x-=15;if(e.key==="ArrowRight")x+=15;};function loop(){ctx.clearRect(0,0,300,180);ctx.fillStyle="#00f0ff";ctx.fillRect(x,150,40,15);requestAnimationFrame(loop);}loop();<\/script></body>', by: 'system', authorName: 'Pedro Mesquita (Dono)', authorBadge: '👑', likes: 320, comments: [], ts: Date.now() }
-  ],
+  videos: [],
+  games: [],
   pv: {},
   aiMsgs: [
-    { role: 'ai', text: 'Olá! Sou a Complete AI Quantum Master. Sistema unificado e nova moeda de diamantes ativados!' }
+    { role: 'ai', text: 'Olá! Sou a Complete AI Quantum Master. Sistema limpo e Sete Box ativados!' }
   ]
 }));
 
@@ -518,7 +515,7 @@ function updateHeaderStats() {
   const lEl = $('#user-level-badge');
   const xpEl = $('#hero-xp-fill');
 
-  if (cEl) cEl.textContent = isOwner ? '💎 ∞' : `💎 ${myProfile.coins}`;
+  if (cEl) cEl.textContent = isOwner ? '🪙 ∞' : `🪙 ${myProfile.coins}`;
   if (uEl) uEl.textContent = isOwner ? '✨ ∞' : `✨ ${myProfile.ultra}`;
   
   const info = getLevelInfo(myProfile.xp);
@@ -605,7 +602,7 @@ function renderContentList(k) {
   }
 
   if(!filtered.length) { 
-    box.innerHTML = '<div class="empty">Nenhum conteúdo encontrado com esses critérios.</div>'; 
+    box.innerHTML = '<div class="empty">Nenhum conteúdo publicado ainda. Seja o primeiro a publicar!</div>'; 
     return; 
   }
   
@@ -622,7 +619,8 @@ function renderContentList(k) {
       body = `<iframe class="game-frame" srcdoc="${esc(gameHtml)}"></iframe>`;
     }
     
-    let deleteBtnHtml = isOwner ? `<button class="danger" onclick="deletePost('${k}','${x.id}')">Apagar</button>` : '';
+    // APENAS O DONO TEM O BOTÃO DE REMOVER QUALQUER COISA
+    let deleteBtnHtml = isOwner ? `<button class="danger" onclick="deletePost('${k}','${x.id}')">Apagar (Dono)</button>` : '';
 
     return `
       <div class="card">
@@ -754,46 +752,46 @@ function sendPVMessage(targetUid) {
   drawPVMessages(targetUid);
 }
 
-// --- COMPLETE SHOP ULTRA AVANÇADA ---
+// --- COMPLETE SHOP COM SETE BOX E A MOEDA SUPER CARA ---
 function completeShopView() {
   return `
     <div class="card row" style="gap:6px; background: rgba(13,17,23,0.95);">
       <button class="s ${completeShopSubTab==='ofertas'?'on':''}" onclick="completeShopSubTab='ofertas'; render();">🔥 Pacotes Supreme</button>
-      <button class="s ${completeShopSubTab==='cambio'?'on':''}" onclick="completeShopSubTab='cambio'; render();">🔄 Câmbio Avançado</button>
+      <button class="s ${completeShopSubTab==='cambio'?'on':''}" onclick="completeShopSubTab='cambio'; render();">🔄 Câmbio Sete Box</button>
       <button class="s ${completeShopSubTab==='misticas'?'on':''}" onclick="completeShopSubTab='misticas'; render();">✨ Caixas & Bônus</button>
       <button class="s ${completeShopSubTab==='cofres'?'on':''}" onclick="completeShopSubTab='cofres'; render();">🎁 Cofres de Elite</button>
     </div>
 
     ${completeShopSubTab === 'ofertas' ? `
       <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:16px;">
+        <div class="card" style="margin:0; border: 2px solid var(--gold);">
+          <div class="row" style="justify-content:space-between;"><b style="color:var(--gold);">👑 Sete Box de Ouro Puro</b><span style="background:rgba(245,158,11,0.25); color:var(--gold); padding:2px 8px; border-radius:8px; font-size:11px;">SUPREMA</span></div>
+          <div style="font-size:24px; font-weight:900; margin:14px 0;">🪙 1.000.000 Sete Box</div>
+          <p class="rules">A moeda mais cara, valiosa e lendária de todo o ecossistema Complete Box!</p>
+          <button class="p" style="width:100%; background:linear-gradient(135deg, var(--gold), var(--pink));" onclick="buySupremeGoldCurrency()">Comprar por ✨ 50 Ultra Coins</button>
+        </div>
         <div class="card" style="margin:0; border: 2px solid var(--ultra);">
-          <div class="row" style="justify-content:space-between;"><b style="color:var(--ultra);">✨ Kit Iniciante Elite</b><span style="background:rgba(35,134,54,0.25); color:#3fb950; padding:2px 8px; border-radius:8px; font-size:11px;">POPULAR</span></div>
+          <div class="row" style="justify-content:space-between;"><b style="color:var(--ultra);">✨ Kit Iniciante Sete</b><span style="background:rgba(35,134,54,0.25); color:#3fb950; padding:2px 8px; border-radius:8px; font-size:11px;">POPULAR</span></div>
           <div style="font-size:28px; font-weight:900; margin:14px 0;">✨ 25 Ultra Coins</div>
           <p class="rules">Inclui +2.500 XP bônus para subir de nível rápido.</p>
-          <button class="p" style="width:100%; background:linear-gradient(135deg, var(--ac), var(--ultra)); color:#010409;" onclick="buyBundle(25, 2500, 150000)">Comprar por 💎 150.000</button>
-        </div>
-        <div class="card" style="margin:0; border: 2px solid var(--gold);">
-          <div class="row" style="justify-content:space-between;"><b style="color:var(--gold);">👑 Mega Tesouro do Dono</b><span style="background:rgba(245,158,11,0.25); color:var(--gold); padding:2px 8px; border-radius:8px; font-size:11px;">MASTER</span></div>
-          <div style="font-size:28px; font-weight:900; margin:14px 0;">✨ 100 Ultra Coins</div>
-          <p class="rules">Inclui +10.000 XP bônus e estatísticas de elite.</p>
-          <button class="p" style="width:100%; background:linear-gradient(135deg, var(--gold), var(--pink));" onclick="buyBundle(100, 10000, 550000)">Comprar por 💎 550.000</button>
+          <button class="p" style="width:100%; background:linear-gradient(135deg, var(--ac), var(--ultra)); color:#010409;" onclick="buyBundle(25, 2500, 50000)">Comprar por 🪙 50.000 Sete Box</button>
         </div>
       </div>
     ` : ''}
 
     ${completeShopSubTab === 'cambio' ? `
       <div class="card">
-        <b style="font-size:18px;">🔄 Câmbio Avançado de Diamantes & Ultra Coins</b>
+        <b style="font-size:18px;">🔄 Câmbio Avançado de Sete Box & Ultra Coins</b>
         <p class="rules">Converta seus ativos instantaneamente com taxas dinâmicas e zero burocracia.</p>
         <div style="margin-top:20px; display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:16px;">
           <div style="background:rgba(1,4,9,0.7); border:1px solid var(--bd); padding:20px; border-radius:18px; text-align:center;">
-            <div style="color:var(--gold); font-weight:bold; margin-bottom:10px;">Diamantes ➔ Ultra Coins</div>
-            <div style="font-size:13px; color:var(--mu); margin-bottom:14px;">Taxa: 10.000 Diamantes = 1 Ultra Coin</div>
-            <button class="p" style="width:100%;" onclick="exchangeCoinsToUltra()">Converter 10.000 💎</button>
+            <div style="color:var(--gold); font-weight:bold; margin-bottom:10px;">Sete Box ➔ Ultra Coins</div>
+            <div style="font-size:13px; color:var(--mu); margin-bottom:14px;">Taxa: 10.000 Sete Box = 1 Ultra Coin</div>
+            <button class="p" style="width:100%;" onclick="exchangeCoinsToUltra()">Converter 10.000 🪙</button>
           </div>
           <div style="background:rgba(1,4,9,0.7); border:1px solid var(--bd); padding:20px; border-radius:18px; text-align:center;">
-            <div style="color:var(--ultra); font-weight:bold; margin-bottom:10px;">Ultra Coins ➔ Diamantes</div>
-            <div style="font-size:13px; color:var(--mu); margin-bottom:14px;">Taxa: 1 Ultra Coin = 9.500 Diamantes</div>
+            <div style="color:var(--ultra); font-weight:bold; margin-bottom:10px;">Ultra Coins ➔ Sete Box</div>
+            <div style="font-size:13px; color:var(--mu); margin-bottom:14px;">Taxa: 1 Ultra Coin = 9.500 Sete Box</div>
             <button class="s" style="width:100%; background:var(--card-hover);" onclick="exchangeUltraToCoins()">Converter 1 ✨</button>
           </div>
         </div>
@@ -804,7 +802,7 @@ function completeShopView() {
       <div class="card" style="text-align:center; padding:30px;">
         <span style="font-size:50px;">📦</span>
         <b style="font-size:20px; display:block; margin:10px 0;">Caixa Mística Surpresa Global</b>
-        <p class="rules">Abra uma caixa misteriosa gerada pelo sistema para faturar recompensas aleatórias.</p>
+        <p class="rules">Abra uma caixa misteriosa gerada pelo sistema para faturar recompensas aleatórias em Sete Box.</p>
         <button class="p" style="margin-top:14px; padding:14px 30px; background:linear-gradient(135deg, var(--gold), var(--ac));" onclick="openMysticBox()">Abrir Caixa Mística 🎁</button>
       </div>
     ` : ''}
@@ -812,9 +810,9 @@ function completeShopView() {
     ${completeShopSubTab === 'cofres' ? `
       <div class="card">
         <b style="font-size:18px;">🎁 Cofres de Recompensas Lendários</b>
-        <p class="rules">Desbloqueie cofres para acumular grandes fortunas em diamantes e experiência.</p>
+        <p class="rules">Desbloqueie cofres para acumular grandes fortunas em Sete Box e experiência.</p>
         <div class="row" style="margin-top:16px; gap:12px;">
-          <button class="s" style="flex:1; padding:16px;" onclick="openChestType('common')">Abrir Cofre Comum (💎 500)</button>
+          <button class="s" style="flex:1; padding:16px;" onclick="openChestType('common')">Abrir Cofre Comum (🪙 500)</button>
           <button class="p" style="flex:1; padding:16px; background:var(--ultra); color:#010409;" onclick="openChestType('ultra')">Abrir Cofre Ultra (✨ 2)</button>
         </div>
       </div>
@@ -822,8 +820,19 @@ function completeShopView() {
   `;
 }
 
+function buySupremeGoldCurrency() {
+  if (!isOwner && myProfile.ultra < 50) return toast('❌ Você precisa de 50 Ultra Coins para comprar a Sete Box de Ouro Puro!');
+  if (!isOwner) myProfile.ultra -= 50;
+  myProfile.coins += 1000000;
+  addXp(25000);
+  saveProfile();
+  updateHeaderStats();
+  render();
+  toast('👑 LENDÁRIO! Você adquiriu a Sete Box de Ouro Puro (+1.000.000 Sete Box)!');
+}
+
 function buyBundle(ultraAmt, xpAmt, costCoins) {
-  if (!isOwner && myProfile.coins < costCoins) return toast('❌ Diamantes insuficientes!');
+  if (!isOwner && myProfile.coins < costCoins) return toast('❌ Sete Box insuficientes!');
   if (!isOwner) myProfile.coins -= costCoins;
   myProfile.ultra += ultraAmt;
   addXp(xpAmt);
@@ -834,7 +843,7 @@ function buyBundle(ultraAmt, xpAmt, costCoins) {
 }
 
 function exchangeCoinsToUltra() {
-  if (!isOwner && myProfile.coins < 10000) return toast('❌ Você precisa de 10.000 diamantes!');
+  if (!isOwner && myProfile.coins < 10000) return toast('❌ Você precisa de 10.000 Sete Box!');
   if (!isOwner) myProfile.coins -= 10000;
   myProfile.ultra += 1;
   saveProfile();
@@ -850,28 +859,28 @@ function exchangeUltraToCoins() {
   saveProfile();
   updateHeaderStats();
   render();
-  toast('🎉 Câmbio realizado: +9.500 Diamantes!');
+  toast('🎉 Câmbio realizado: +9.500 Sete Box!');
 }
 
 function openMysticBox() {
-  let rewardCoins = Math.floor(Math.random() * 8000) + 2000;
-  let rewardXp = Math.floor(Math.random() * 1500) + 500;
+  let rewardCoins = Math.floor(Math.random() * 5000) + 1000;
+  let rewardXp = Math.floor(Math.random() * 1000) + 300;
   myProfile.coins += rewardCoins;
   addXp(rewardXp);
   saveProfile();
   updateHeaderStats();
   render();
-  toast(`✨ Caixa Mística aberta: +${rewardCoins} Diamantes & +${rewardXp} XP!`);
+  toast(`✨ Caixa Mística aberta: +${rewardCoins} Sete Box & +${rewardXp} XP!`);
 }
 
 function openChestType(type) {
   if (type === 'common') {
-    if (!isOwner && myProfile.coins < 500) return toast('❌ Diamantes insuficientes!');
+    if (!isOwner && myProfile.coins < 500) return toast('❌ Sete Box insuficientes!');
     if (!isOwner) myProfile.coins -= 500;
-    let reward = Math.floor(Math.random() * 3500) + 1000;
+    let reward = Math.floor(Math.random() * 2500) + 500;
     myProfile.coins += reward;
     addXp(150);
-    toast(`🎁 Cofre Comum aberto: +${reward} diamantes!`);
+    toast(`🎁 Cofre Comum aberto: +${reward} Sete Box!`);
   } else {
     if (!isOwner && myProfile.ultra < 2) return toast('❌ Você precisa de 2 Ultra Coins!');
     if (!isOwner) myProfile.ultra -= 2;
@@ -885,7 +894,7 @@ function openChestType(type) {
   render();
 }
 
-// --- LOJA DE ACESSÓRIOS COMPLETA (60+ ITENS) ---
+// --- LOJA DE ACESSÓRIOS (60+ ITENS) ---
 const EMOJIS = ['👑','✨','🔥','⚡','🚀','💎','🏆','🎯','🎨','🔮','🛡️','🗡️','🐉','🐯','🦅','🍀','🎩','🎸','🍕','🍔','🛸','💡','🪐','🎲','🍉','🍩'];
 const ADJ = ['Lendário','Supremo','Místico','Elite','Imperial','Divino','Solar','Lunar','Cyber','Fênix','Soberano','Alpha','Quantum','Vanguard','Stellar','Neon','Prime'];
 const TYPE = ['Coroa','Escudo','Espada','Orbe','Símbolo','Manto','Anel','Cristal','Aura','Emblema'];
@@ -895,7 +904,7 @@ for (let i = 1; i <= 60; i++) {
   let cat = i <= 15 ? 'coroas' : i <= 30 ? 'auras' : i <= 45 ? 'espadas' : 'emblemas';
   let badge = EMOJIS[(i - 1) % EMOJIS.length];
   let name = `${badge} ${TYPE[(i - 1) % TYPE.length]} ${ADJ[(i - 1) % TYPE.length]} #${i}`;
-  let price = 90 + (i * 35);
+  let price = 100 + (i * 50);
   let isUltraItem = i % 5 === 0;
   SHOP_ITEMS.push({ id: 'item_' + i, name, desc: `Customização oficial nível ${i} da Complete Shop`, price, currency: isUltraItem ? 'ultra' : 'coins', badge, category: cat });
 }
@@ -907,7 +916,7 @@ function accessoriesView() {
   return `
     <div class="card">
       <b style="font-size:20px;">👑 Loja de Acessórios & Distintivos</b>
-      <p class="rules">Adquira itens exclusivos para personalizar seu perfil global na rede.</p>
+      <p class="rules">Adquira itens exclusivos usando Sete Box para personalizar seu perfil global na rede.</p>
       <div class="row" style="gap:6px; margin-top:14px;">
         ${cats.map(([k, l]) => `<button class="s ${shopCategory===k?'on':''}" onclick="shopCategory='${k}'; render();">${l}</button>`).join('')}
       </div>
@@ -921,7 +930,7 @@ function accessoriesView() {
             <div class="rules" style="font-size:12px; margin-bottom:16px;">${esc(i.desc)}</div>
           </div>
           <div>
-            <div style="color:${i.currency==='ultra'?'var(--ultra)':'var(--gold)'}; font-weight:bold; margin-bottom:12px;">${i.currency==='ultra'?'✨ '+i.price+' Ultra Coins':'💎 '+i.price}</div>
+            <div style="color:${i.currency==='ultra'?'var(--ultra)':'var(--gold)'}; font-weight:bold; margin-bottom:12px;">${i.currency==='ultra'?'✨ '+i.price+' Ultra Coins':'🪙 '+i.price+' Sete Box'}</div>
             <button class="p" style="width:100%; padding:10px;" onclick="buyCustomization('${i.id}', ${i.price}, '${i.currency}', '${i.badge}')">Comprar e Usar 🛒</button>
           </div>
         </div>
@@ -942,7 +951,7 @@ function buyCustomization(id, price, currency, badge) {
     myProfile.ultra -= price;
   } else {
     let tot = myProfile.coins + myProfile.savings;
-    if (tot < price) return toast('❌ Diamantes insuficientes na carteira e poupança!');
+    if (tot < price) return toast('❌ Sete Box insuficientes na carteira e poupança!');
     if (myProfile.coins < price) {
       let diff = price - myProfile.coins;
       myProfile.coins = 0;
@@ -1074,7 +1083,7 @@ function chestView() {
     <div class="card" style="text-align:center; padding:35px 20px;">
       <b style="font-size:24px;">🎁 Baú Misterioso de 1 Hora</b>
       <div style="font-size:70px; margin:20px 0;">📦</div>
-      <button class="p" style="padding:14px 30px;" onclick="toast('🎉 Baú aberto com sucesso! +150 Diamantes!')">Abrir Baú 🔓</button>
+      <button class="p" style="padding:14px 30px;" onclick="toast('🎉 Baú aberto com sucesso! +150 Sete Box!')">Abrir Baú 🔓</button>
     </div>
   `;
 }
@@ -1083,7 +1092,7 @@ function minerView() {
   return `
     <div class="card" style="text-align:center; padding:35px 20px;">
       <b style="font-size:24px;">⛏️ Mineração Pro</b>
-      <div style="margin:25px auto; width:130px; height:130px; background:var(--ultra); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:45px; cursor:pointer;" onclick="toast('⚡ +25 Diamantes minerados!')">💎</div>
+      <div style="margin:25px auto; width:130px; height:130px; background:var(--ultra); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:45px; cursor:pointer;" onclick="toast('⚡ +25 Sete Box mineradas!')">💎</div>
     </div>
   `;
 }
@@ -1093,7 +1102,7 @@ function spinView() {
     <div class="card" style="text-align:center; padding:35px 20px;">
       <b style="font-size:24px;">🎡 Roleta da Sorte Diária</b>
       <div style="color:var(--gold); font-size:22px; font-weight:bold; margin:20px 0;">Giro Pronto!</div>
-      <button class="p" style="padding:14px 30px;" onclick="toast('🎉 Ganhou +500 Diamantes na Roleta!')">Girar Agora 🎰</button>
+      <button class="p" style="padding:14px 30px;" onclick="toast('🎉 Ganhou +500 Sete Box na Roleta!')">Girar Agora 🎰</button>
     </div>
   `;
 }
@@ -1102,7 +1111,7 @@ function bankView() {
   return `
     <div class="card">
       <b style="font-size:20px;">🏦 Banco & Poupança Global</b>
-      <p class="rules" style="margin-top:10px;">Guarde seus diamantes com segurança.</p>
+      <p class="rules" style="margin-top:10px;">Guarde seus Sete Box com segurança.</p>
       <input id="bk-amt" type="number" placeholder="Quantidade" min="1">
       <div class="row" style="margin-top:12px;">
         <button class="p" style="flex:1;" onclick="toast('Depositado com sucesso!')">Depositar 📥</button>
@@ -1151,8 +1160,8 @@ function profileView() {
       <b style="font-size:18px;">📊 Estatísticas Globais da Conta</b>
       <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-top:14px;">
         <div style="background:rgba(1,4,9,0.7); border:1px solid var(--bd); padding:16px; border-radius:16px; text-align:center;">
-          <div style="font-size:24px;">💎</div>
-          <div style="font-size:13px; color:var(--mu); margin-top:4px;">Diamantes na Carteira</div>
+          <div style="font-size:24px;">🪙</div>
+          <div style="font-size:13px; color:var(--mu); margin-top:4px;">Sete Box na Carteira</div>
           <b style="font-size:18px; color:var(--gold);">${isOwner ? '∞' : myProfile.coins}</b>
         </div>
         <div style="background:rgba(1,4,9,0.7); border:1px solid var(--bd); padding:16px; border-radius:16px; text-align:center;">
@@ -1243,7 +1252,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const statuses = [
     "Inicializando motores quânticos...",
     "Sincronizando rede global de usuários...",
-    "Carregando a Complete Shop & Câmbio...",
+    "Carregando a Complete Shop & Sete Box...",
     "Tudo pronto! Bem-vindo ao Complete Box."
   ];
 
